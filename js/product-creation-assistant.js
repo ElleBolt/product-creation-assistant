@@ -1,108 +1,130 @@
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM fully loaded and parsed');
+jQuery(document).ready(function ($) {
+    console.log("DOM fully loaded and parsed");
 
-    // Add New Rule Button
-    const addRuleButton = document.getElementById('add-rule');
-    if (addRuleButton) {
-        addRuleButton.addEventListener('click', function () {
-            document.getElementById('new-rule-form').style.display = 'block';
+    // Add Rule Button Click
+    const addRuleBtn = document.getElementById('add-rule');
+    const newRuleForm = document.getElementById('new-rule-form');
+
+    if (addRuleBtn && newRuleForm) {
+        addRuleBtn.addEventListener('click', function () {
+            newRuleForm.style.display = 'block';
         });
     } else {
-        console.error('Add Rule Button not found');
+        console.error("Add Rule Button or New Rule Form not found");
     }
 
-    // Save Rule Button
-    const saveRuleButton = document.getElementById('save-rule');
-    if (saveRuleButton) {
-        saveRuleButton.addEventListener('click', function () {
-            // Handle rule saving logic
-        });
-    }
+    // Save Rule Button Click
+    const saveRuleBtn = document.getElementById('save-rule');
+    if (saveRuleBtn) {
+        saveRuleBtn.addEventListener('click', function () {
+            const ruleName = document.querySelector('[name="rule_name"]').value;
+            const materialIds = document.querySelector('[name="material_ids"]').value;
 
-    // Cancel Button
-    const cancelRuleButton = document.getElementById('cancel-rule');
-    if (cancelRuleButton) {
-        cancelRuleButton.addEventListener('click', function () {
-            document.getElementById('new-rule-form').style.display = 'none';
-        });
-    }
-
-    // Edit Button functionality
-    document.querySelectorAll('.edit-rule').forEach(button => {
-        button.addEventListener('click', function () {
-            const index = this.getAttribute('data-index');
-            const rule = pcaRules[index];
-
-            if (rule) {
-                // Populate the form with the existing rule data
-                document.getElementById('new-rule-form').style.display = 'block';
-                document.getElementById('rule-name').value = rule.name;
-                // Populate attributes and material IDs
-                populateAttributes(rule.attributes);
-                document.getElementById('material-ids').value = JSON.stringify(rule.material_ids);
-            }
-        });
-    });
-
-    // Populate Attributes in the Form
-    function populateAttributes(attributes) {
-        const attributesWrapper = document.querySelector('.attributes-wrapper');
-        attributesWrapper.innerHTML = ''; // Clear existing attributes
-
-        for (const attrName in attributes) {
-            if (attributes.hasOwnProperty(attrName)) {
-                const terms = attributes[attrName];
-                let attrTemplate = `
-                    <div class="attribute-item">
-                        <label>${attrName}:</label>
-                        <select name="attributes[${attrName}][]" multiple="multiple" class="wc-enhanced-select">
-                `;
-                terms.forEach(term => {
-                    attrTemplate += `<option value="${term}" selected>${term}</option>`;
-                });
-                attrTemplate += `</select><button type="button" class="button remove-attribute">Remove</button></div>`;
-                attributesWrapper.insertAdjacentHTML('beforeend', attrTemplate);
-            }
-        }
-
-        // Reinitialize select2 or chosen after dynamically adding elements
-        jQuery('.wc-enhanced-select').select2({
-            placeholder: "Select terms"
-        });
-    }
-
-    // Event Listener for the "Add Existing" Dropdown
-    document.querySelector('.existing-attribute-dropdown').addEventListener('change', function () {
-        const attribute = this.value;
-        if (attribute) {
-            fetchAttributeTerms(attribute);
-        }
-    });
-
-    function fetchAttributeTerms(attribute) {
-        fetch(`admin-ajax.php?action=get_attribute_terms&attribute_name=${attribute}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.data.terms.length > 0) {
-                    const terms = data.data.terms;
-                    let options = '';
-                    terms.forEach(term => {
-                        options += `<option value="${term.slug}">${term.name}</option>`;
-                    });
-                    const attributesWrapper = document.querySelector('.attributes-wrapper');
-                    attributesWrapper.insertAdjacentHTML('beforeend', `
-                        <div class="attribute-item">
-                            <label>${attribute}:</label>
-                            <select name="attributes[${attribute}][]" multiple="multiple" class="wc-enhanced-select">
-                                ${options}
-                            </select>
-                            <button type="button" class="button remove-attribute">Remove</button>
-                        </div>
-                    `);
-                    jQuery('.wc-enhanced-select').select2({
-                        placeholder: "Select terms"
-                    });
+            // Collect attributes
+            let attributes = {};
+            $('.attributes-wrapper .attribute-item').each(function () {
+                const attributeName = $(this).find('label').text().replace(':', '');
+                const attributeValues = $(this).find('select').val();
+                if (attributeValues && attributeValues.length > 0) {
+                    attributes[attributeName] = attributeValues;
                 }
             });
+
+            if (!ruleName) {
+                alert('Please enter a rule name.');
+                return;
+            }
+
+            // Send data via AJAX
+            $.ajax({
+                url: productCreationAssistant.adminUrl,
+                method: 'POST',
+                data: {
+                    action: 'save_pca_rule',
+                    rule_name: ruleName,
+                    material_ids: materialIds,
+                    attributes: attributes,
+                },
+                success: function (response) {
+                    if (response.success) {
+                        location.reload(); // Reload the page to see the updated rules list
+                    } else {
+                        alert('Failed to save the rule. Please try again.');
+                    }
+                },
+                error: function () {
+                    alert('An error occurred. Please try again.');
+                }
+            });
+        });
+    } else {
+        console.error("Save Rule Button not found");
     }
+
+    // Cancel Rule Button Click
+    const cancelRuleBtn = document.getElementById('cancel-rule');
+    if (cancelRuleBtn) {
+        cancelRuleBtn.addEventListener('click', function () {
+            newRuleForm.style.display = 'none';
+            // Clear the form
+            document.querySelector('[name="rule_name"]').value = '';
+            document.querySelector('[name="material_ids"]').value = '';
+            $('.attributes-wrapper').empty(); // Clear any attributes
+        });
+    } else {
+        console.error("Cancel Rule Button not found");
+    }
+
+    // Handle Add Existing Attribute Dropdown Change
+    $(document).on('change', '.existing-attribute-dropdown', function () {
+        const attribute = $(this).val();
+        if (attribute) {
+            const wrapper = $(this).closest('.attribute-add-wrapper').next('.attributes-wrapper');
+
+            let attrTemplate = `
+                <div class="form-field attribute-item">
+                    <label>${attribute}:</label>
+                    <select name="attributes[${attribute}][]" multiple="multiple" class="wc-enhanced-select deferred-select">
+                        <option value="">${productCreationAssistant.searching}</option>
+                    </select>
+                    <button type="button" class="button remove-attribute">${productCreationAssistant.remove}</button>
+                </div>
+            `;
+
+            wrapper.append(attrTemplate);
+
+            // Fetch terms via AJAX
+            const selectBox = wrapper.find('.deferred-select').last();
+            $.ajax({
+                url: productCreationAssistant.adminUrl,
+                method: 'GET',
+                data: {
+                    action: 'get_attribute_terms',
+                    attribute_name: attribute,
+                },
+                success: function (response) {
+                    let options = '';
+                    if (response.success && response.data.terms.length > 0) {
+                        options = response.data.terms.map(term => `<option value="${term.slug}">${term.name}</option>`).join('');
+                    } else {
+                        options = `<option value="">${productCreationAssistant.noTermsFound}</option>`;
+                    }
+                    selectBox.html(options);
+                    selectBox.chosen({
+                        width: '100%',
+                        placeholder_text_multiple: productCreationAssistant.selectTerms,
+                        no_results_text: productCreationAssistant.noTermsFound
+                    }).trigger("chosen:updated");
+                },
+                error: function () {
+                    selectBox.html(`<option value="">${productCreationAssistant.noTermsFound}</option>`);
+                }
+            });
+        }
+    });
+
+    // Handle Remove Attribute Button Click
+    $(document).on('click', '.remove-attribute', function () {
+        $(this).closest('.attribute-item').remove();
+    });
 });

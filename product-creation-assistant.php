@@ -350,3 +350,28 @@ function pca_delete_rule() {
     }
 }
 add_action('wp_ajax_delete_pca_rule', 'pca_delete_rule');
+
+// Function to handle saving a new rule via AJAX
+function pca_save_rule() {
+    if (isset($_POST['rule_name'])) {
+        $rule_name = sanitize_text_field($_POST['rule_name']);
+        $material_ids = isset($_POST['material_ids']) ? json_decode(stripslashes($_POST['material_ids']), true) : [];
+        $attributes = isset($_POST['attributes']) ? array_map('sanitize_text_field', $_POST['attributes']) : [];
+
+        // Get existing rules
+        $rules = get_option('pca_rules', []);
+        // Add new rule
+        $rules[] = [
+            'name' => $rule_name,
+            'material_ids' => $material_ids,
+            'attributes' => $attributes
+        ];
+        // Save updated rules
+        update_option('pca_rules', $rules);
+
+        wp_send_json_success();
+    } else {
+        wp_send_json_error(array('message' => 'Invalid data.'));
+    }
+}
+add_action('wp_ajax_save_pca_rule', 'pca_save_rule');
