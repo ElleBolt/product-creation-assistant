@@ -19,18 +19,19 @@ function pca_enqueue_scripts() {
     wp_enqueue_style('chosen-css', 'https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css', array(), '1.8.7');
 
     // Enqueue the custom JavaScript file
-    wp_enqueue_script('pca-js', plugin_dir_url(__FILE__) . 'js/product-creation-assistant.js', array('jquery'), null, true);
+    wp_enqueue_script('pca-js', plugin_dir_url(__FILE__) . 'js/product-creation-assistant.js', array('jquery', 'chosen-js'), null, true);
 
     // Pass PHP data to JavaScript
     $saved_rules = get_option('pca_rules', []);
     wp_localize_script('pca-js', 'pcaRules', $saved_rules);
 
-    // Pass localized strings to JavaScript
+    // Pass localized strings and admin URL to JavaScript
     wp_localize_script('pca-js', 'productCreationAssistant', array(
         'searching' => __('Searching...', 'product-creation-assistant'),
         'remove' => __('Remove', 'product-creation-assistant'),
         'noTermsFound' => __('No terms found', 'product-creation-assistant'),
         'selectTerms' => __('Select terms', 'product-creation-assistant'),
+        'adminUrl' => admin_url('admin-ajax.php'),
     ));
 }
 add_action('admin_enqueue_scripts', 'pca_enqueue_scripts');
