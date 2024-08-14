@@ -40,13 +40,103 @@ function pca_rules_section_callback() {
 
 // Define the field callback function (replace with the updated dynamic form code provided earlier)
 function pca_rules_field_callback() {
-    // Your dynamic form code goes here
+    // Retrieve saved rules from the database
+    $rules = get_option('pca_rules', []);
+
+    ?>
+    <div id="pca-rules-wrapper">
+        <button type="button" id="add-rule" class="button button-primary"><?php _e('Add New Rule', 'product-creation-assistant'); ?></button>
+
+        <div id="rules-list">
+            <!-- Existing rules will be populated here -->
+            <?php if (!empty($rules)): ?>
+                <?php foreach ($rules as $index => $rule): ?>
+                    <div class="rule-item">
+                        <h4><?php echo esc_html($rule['name']); ?></h4>
+                        <label><?php _e('Product Name:', 'product-creation-assistant'); ?></label>
+                        <input type="text" name="pca_rules[<?php echo $index; ?>][name]" value="<?php echo esc_attr($rule['name']); ?>" />
+
+                        <label><?php _e('Sizes (comma-separated):', 'product-creation-assistant'); ?></label>
+                        <input type="text" name="pca_rules[<?php echo $index; ?>][sizes]" value="<?php echo esc_attr(implode(', ', $rule['attributes']['size'])); ?>" />
+
+                        <label><?php _e('Colors (comma-separated):', 'product-creation-assistant'); ?></label>
+                        <input type="text" name="pca_rules[<?php echo $index; ?>][colors]" value="<?php echo esc_attr(implode(', ', $rule['attributes']['color'])); ?>" />
+
+                        <label><?php _e('Material IDs (JSON format):', 'product-creation-assistant'); ?></label>
+                        <textarea name="pca_rules[<?php echo $index; ?>][material_ids]"><?php echo esc_textarea(json_encode($rule['material_ids'])); ?></textarea>
+
+                        <button type="button" class="button remove-rule"><?php _e('Remove', 'product-creation-assistant'); ?></button>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let ruleIndex = <?php echo count($rules); ?>;
+
+            document.getElementById('add-rule').addEventListener('click', function() {
+                let ruleTemplate = `
+                    <div class="rule-item">
+                        <h4><?php _e('New Rule', 'product-creation-assistant'); ?></h4>
+                        <label><?php _e('Product Name:', 'product-creation-assistant'); ?></label>
+                        <input type="text" name="pca_rules[` + ruleIndex + `][name]" value="" />
+
+                        <label><?php _e('Sizes (comma-separated):', 'product-creation-assistant'); ?></label>
+                        <input type="text" name="pca_rules[` + ruleIndex + `][sizes]" value="" />
+
+                        <label><?php _e('Colors (comma-separated):', 'product-creation-assistant'); ?></label>
+                        <input type="text" name="pca_rules[` + ruleIndex + `][colors]" value="" />
+
+                        <label><?php _e('Material IDs (JSON format):', 'product-creation-assistant'); ?></label>
+                        <textarea name="pca_rules[` + ruleIndex + `][material_ids]"></textarea>
+
+                        <button type="button" class="button remove-rule"><?php _e('Remove', 'product-creation-assistant'); ?></button>
+                    </div>
+                `;
+                document.getElementById('rules-list').insertAdjacentHTML('beforeend', ruleTemplate);
+                ruleIndex++;
+            });
+
+            document.getElementById('rules-list').addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-rule')) {
+                    e.target.closest('.rule-item').remove();
+                }
+            });
+        });
+    </script>
+    <?php
 }
+
 
 // Sanitize the input before saving
 function pca_sanitize_rules($input) {
-    // Your sanitization code goes here
+    $sanitized_rules = [];
+
+    foreach ($input as $rule) {
+        $sanitized_rule = [];
+        $sanitized_rule['name'] = sanitize_text_field($rule['name']);
+        $sanitized_rule['attributes']['size'] = array_map('sanitize_text_field', explode(',', $rule['sizes']));
+        $sanitized_rule['attributes']['color'] = array_map('sanitize_text_field', explode(',', $rule['colors']));
+        $sanitized_rule['material_ids'] = json_decode(wp_kses_post($rule['material_ids']), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            add_settings_error(
+                'pca_rules',
+                'pca_rules_json_error',
+                __('Invalid JSON format for Material IDs.', 'product-creation-assistant'),
+                'error'
+            );
+            continue;
+        }
+
+        $sanitized_rules[] = $sanitized_rule;
+    }
+
+    return $sanitized_rules;
 }
+
 
 // Add a custom menu page under WooCommerce
 function pca_register_custom_menu_page() {
