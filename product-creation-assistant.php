@@ -17,13 +17,24 @@ function pca_enqueue_scripts() {
     // Load Chosen.js and its CSS from a CDN
     wp_enqueue_script('chosen-js', 'https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js', array('jquery'), '1.8.7', true);
     wp_enqueue_style('chosen-css', 'https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css', array(), '1.8.7');
+
+    // Enqueue the custom JavaScript file
+    wp_enqueue_script('pca-js', plugin_dir_url(__FILE__) . 'js/product-creation-assistant.js', array('jquery'), null, true);
+
+    // Pass PHP data to JavaScript
+    $saved_rules = get_option('pca_rules', []);
+    wp_localize_script('pca-js', 'pcaRules', $saved_rules);
 }
 add_action('admin_enqueue_scripts', 'pca_enqueue_scripts');
 
 function pca_enqueue_admin_styles() {
-    // Enqueue WooCommerce admin styles to make the UI consistent with WooCommerce
+    // Enqueue WooCommerce admin styles
     wp_enqueue_style('woocommerce_admin_styles', WC()->plugin_url() . '/assets/css/admin.css');
     
+    // Enqueue select2 for enhanced selects
+    wp_enqueue_script('select2', WC()->plugin_url() . '/assets/js/select2/select2.full.min.js', array('jquery'), '4.0.3', true);
+    wp_enqueue_style('select2', WC()->plugin_url() . '/assets/css/select2.css', array(), '4.0.3');
+
     // Add custom styles for the Product Creation Assistant UI
     $custom_css = "
         #pca-rules-wrapper .rule-item {
@@ -105,139 +116,62 @@ function pca_render_settings_page() {
     ?>
     <div class="wrap">
         <h1><?php _e('Product Creation Assistant', 'product-creation-assistant'); ?></h1>
-        <form method="post" action="options.php">
-            <?php
-            // Output security fields for the registered setting "pca_options_group"
-            settings_fields('pca_options_group');
-            ?>
-
-            <div id="pca-rules-wrapper">
+        
+        <!-- Rule Listing -->
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th><?php _e('Rule Name', 'product-creation-assistant'); ?></th>
+                    <th><?php _e('Actions', 'product-creation-assistant'); ?></th>
+                </tr>
+            </thead>
+            <tbody id="rules-wrapper">
                 <?php if (!empty($saved_rules)): ?>
                     <?php foreach ($saved_rules as $index => $rule): ?>
-                        <div class="rule-item">
-                            <h4><?php echo esc_html($rule['name']); ?></h4>
-
-                            <label><?php _e('Rule Name:', 'product-creation-assistant'); ?></label>
-                            <input type="text" name="pca_rules[<?php echo $index; ?>][name]" value="<?php echo esc_attr($rule['name']); ?>" />
-
-                            <label><?php _e('Attributes:', 'product-creation-assistant'); ?></label>
-                            <div class="attributes-wrapper">
-                                <?php pca_render_attributes_ui($index, $rule['attributes']); ?>
-                            </div>
-
-                            <label><?php _e('Material IDs (JSON format):', 'product-creation-assistant'); ?></label>
-                            <textarea name="pca_rules[<?php echo $index; ?>][material_ids]"><?php echo esc_textarea(json_encode($rule['material_ids'])); ?></textarea>
-
-                            <button type="button" class="button remove-rule"><?php _e('Remove', 'product-creation-assistant'); ?></button>
-                        </div>
+                        <tr>
+                            <td><?php echo esc_html($rule['name']); ?></td>
+                            <td>
+                                <button type="button" class="button edit-rule" data-index="<?php echo $index; ?>"><?php _e('Edit', 'product-creation-assistant'); ?></button>
+                                <button type="button" class="button delete-rule" data-index="<?php echo $index; ?>"><?php _e('Delete', 'product-creation-assistant'); ?></button>
+                            </td>
+                        </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
+            </tbody>
+        </table>
+
+        <button type="button" id="add-rule" class="button button-primary"><?php _e('Add New Rule', 'product-creation-assistant'); ?></button>
+
+        <!-- New Rule Form -->
+        <div id="new-rule-form" style="display:none;">
+            <h2><?php _e('New Rule', 'product-creation-assistant'); ?></h2>
+            <label><?php _e('Rule Name:', 'product-creation-assistant'); ?></label>
+            <input type="text" name="rule_name" value="" />
+
+            <div class="attribute-add-wrapper">
+                <button type="button" class="button add-new-attribute" onclick="window.location.href='<?php echo admin_url('edit.php?post_type=product&page=product_attributes'); ?>';"><?php _e('Add new', 'product-creation-assistant'); ?></button>
+                <select class="existing-attribute-dropdown wc-enhanced-select">
+                    <option value=""><?php _e('Add existing', 'product-creation-assistant'); ?></option>
+                    <?php
+                    $attributes = wc_get_attribute_taxonomies();
+                    if ($attributes):
+                        foreach ($attributes as $attribute): ?>
+                            <option value="<?php echo esc_attr($attribute->attribute_name); ?>"><?php echo esc_html($attribute->attribute_label); ?></option>
+                        <?php endforeach;
+                    endif;
+                    ?>
+                </select>
             </div>
+            
+            <div class="attributes-wrapper"></div>
 
-            <button type="button" id="add-rule" class="button button-primary"><?php _e('Add New Rule', 'product-creation-assistant'); ?></button>
+            <label><?php _e('Material IDs (JSON format):', 'product-creation-assistant'); ?></label>
+            <textarea name="material_ids"></textarea>
 
-            <?php submit_button(__('Save Rules', 'product-creation-assistant')); ?>
-        </form>
+            <button type="button" id="save-rule" class="button button-primary"><?php _e('Save Rule', 'product-creation-assistant'); ?></button>
+            <button type="button" id="cancel-rule" class="button"><?php _e('Cancel', 'product-creation-assistant'); ?></button>
+        </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let ruleIndex = <?php echo !empty($saved_rules) ? count($saved_rules) : 0; ?>;
-
-            document.getElementById('add-rule').addEventListener('click', function() {
-                let ruleTemplate = `
-                    <div class="rule-item">
-                        <h4><?php _e('New Rule', 'product-creation-assistant'); ?></h4>
-
-                        <label><?php _e('Rule Name:', 'product-creation-assistant'); ?></label>
-                        <input type="text" name="pca_rules[` + ruleIndex + `][name]" value="" />
-
-                        <div class="attribute-add-wrapper">
-                            <button type="button" class="button add-new-attribute" onclick="window.location.href='<?php echo admin_url('edit.php?post_type=product&page=product_attributes'); ?>';"><?php _e('Add new', 'product-creation-assistant'); ?></button>
-                            <select class="existing-attribute-dropdown wc-enhanced-select">
-                                <option value=""><?php _e('Add existing', 'product-creation-assistant'); ?></option>
-                                <?php
-                                $attributes = wc_get_attribute_taxonomies();
-                                if ($attributes):
-                                    foreach ($attributes as $attribute): ?>
-                                        <option value="<?php echo esc_attr($attribute->attribute_name); ?>"><?php echo esc_html($attribute->attribute_label); ?></option>
-                                    <?php endforeach;
-                                endif;
-                                ?>
-                            </select>
-                        </div>
-                        
-                        <div class="attributes-wrapper"></div>
-
-                        <label><?php _e('Material IDs (JSON format):', 'product-creation-assistant'); ?></label>
-                        <textarea name="pca_rules[` + ruleIndex + `][material_ids]"></textarea>
-
-                        <button type="button" class="button remove-rule"><?php _e('Remove', 'product-creation-assistant'); ?></button>
-                    </div>
-                `;
-                document.getElementById('pca-rules-wrapper').insertAdjacentHTML('beforeend', ruleTemplate);
-                ruleIndex++;
-            });
-
-            document.getElementById('pca-rules-wrapper').addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-rule')) {
-                    e.target.closest('.rule-item').remove();
-                } else if (e.target.classList.contains('remove-attribute')) {
-                    e.target.closest('.attribute-item').remove();
-                }
-            });
-
-            document.getElementById('pca-rules-wrapper').addEventListener('change', function(e) {
-                if (e.target.classList.contains('existing-attribute-dropdown')) {
-                    let attribute = e.target.value;
-                    if (attribute) {
-                        let wrapper = e.target.closest('.rule-item').querySelector('.attributes-wrapper');
-                        
-                        // Add the field for the attribute before fetching terms
-                        let attrTemplate = `
-                            <div class="form-field attribute-item">
-                                <label>` + attribute + `:</label>
-                                <select name="pca_rules[` + ruleIndex + `][attributes][` + attribute + `][value][]" multiple="multiple" class="wc-enhanced-select">
-                                    <option value=""><?php _e('Loading terms...', 'product-creation-assistant'); ?></option>
-                                </select>
-                                <button type="button" class="button remove-attribute"><?php _e('Remove', 'product-creation-assistant'); ?></button>
-                            </div>
-                        `;
-                        wrapper.insertAdjacentHTML('beforeend', attrTemplate);
-
-                        // Fetch terms via AJAX
-                        fetch(`<?php echo admin_url('admin-ajax.php'); ?>?action=get_attribute_terms&attribute_name=${attribute}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                let selectBox = wrapper.querySelector('select[name*="[' + attribute + ']"]');
-                                let options = '';
-                                if (data.success && data.data.terms.length > 0) {
-                                    options = data.data.terms.map(term => `<option value="${term.slug}">${term.name}</option>`).join('');
-                                } else {
-                                    options = '<option value=""><?php _e('No terms found', 'product-creation-assistant'); ?></option>';
-                                }
-                                selectBox.innerHTML = options;
-
-                                // Apply chosen.js or a similar plugin for multi-select behavior
-                                jQuery(selectBox).chosen({
-                                    width: '100%',
-                                    placeholder_text_multiple: "<?php _e('Select terms', 'product-creation-assistant'); ?>",
-                                    no_results_text: "<?php _e('No terms found', 'product-creation-assistant'); ?>"
-                                });
-                            })
-                            .catch(error => {
-                                console.error('Error fetching terms:', error);
-                            });
-                    }
-                }
-            });
-
-            // Initialize WooCommerce enhanced selects
-            jQuery('.wc-enhanced-select').select2({
-                placeholder: "<?php _e('Select terms', 'product-creation-assistant'); ?>"
-            });
-        });
-    </script>
     <?php
 }
 
@@ -259,22 +193,22 @@ function pca_render_attributes_ui($index, $selected_attributes = []) {
     </div>
     
     <div class="attributes-wrapper">
-        <?php if ($attributes): ?>
-            <?php foreach ($attributes as $attribute): ?>
-                <?php $attribute_taxonomy = wc_attribute_taxonomy_name($attribute->attribute_name); ?>
-                <?php if (!empty($selected_attributes[$attribute_taxonomy])): ?>
-                    <div class="attribute-item">
-                        <label><?php echo esc_html($attribute->attribute_label); ?>:</label>
-                        <input type="text" name="pca_rules[<?php echo $index; ?>][attributes][<?php echo esc_attr($attribute_taxonomy); ?>][value]" value="<?php echo esc_attr(implode('|', $selected_attributes[$attribute_taxonomy]['value'] ?? [])); ?>" placeholder="<?php _e('Enter options separated by |', 'product-creation-assistant'); ?>" />
-                        <button type="button" class="button remove-attribute"><?php _e('Remove', 'product-creation-assistant'); ?></button>
-                    </div>
-                <?php endif; ?>
+        <?php if ($selected_attributes): ?>
+            <?php foreach ($selected_attributes as $attribute_name => $terms): ?>
+                <div class="attribute-item">
+                    <label><?php echo esc_html($attribute_name); ?>:</label>
+                    <select name="pca_rules[<?php echo $index; ?>][attributes][<?php echo esc_attr($attribute_name); ?>][]" multiple="multiple" class="wc-enhanced-select">
+                        <?php foreach ($terms as $term_slug): ?>
+                            <option value="<?php echo esc_attr($term_slug); ?>" selected><?php echo esc_html(get_term_by('slug', $term_slug, wc_attribute_taxonomy_name($attribute_name))->name); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="button" class="button remove-attribute"><?php _e('Remove', 'product-creation-assistant'); ?></button>
+                </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
     <?php
 }
-
 
 // Register the settings, sections, and fields
 function pca_register_settings() {
@@ -327,41 +261,46 @@ function pca_rules_field_callback() {
 
 // Sanitize the input before saving
 function pca_sanitize_rules($input) {
+    // Ensure that $input is an array
+    if (!is_array($input)) {
+        $input = []; // Initialize as an empty array if it's not already an array
+    }
+
     $sanitized_rules = [];
 
     foreach ($input as $rule) {
-        if (is_array($rule)) {
-            $sanitized_rule = [];
+        // Check if 'name' and 'material_ids' exist and are strings
+        if (isset($rule['name']) && is_string($rule['name'])) {
             $sanitized_rule['name'] = sanitize_text_field($rule['name']);
-            $sanitized_rule['attributes'] = [];
+        } else {
+            $sanitized_rule['name'] = ''; // Default to empty if not set or not a string
+        }
 
-            if (isset($rule['attributes'])) {
-                foreach ($rule['attributes'] as $attr => $data) {
-                    $sanitized_rule['attributes'][$attr] = [
-                        'value' => array_map('sanitize_text_field', explode('|', $data['value'])),
-                        'visible' => isset($data['visible']) && $data['visible'] ? true : false,
-                        'variation' => isset($data['variation']) && $data['variation'] ? true : false,
-                    ];
+        if (isset($rule['material_ids']) && is_string($rule['material_ids'])) {
+            $sanitized_rule['material_ids'] = wp_kses_post($rule['material_ids']);
+        } else {
+            $sanitized_rule['material_ids'] = ''; // Default to empty if not set or not a string
+        }
+
+        // Handle attributes
+        if (isset($rule['attributes']) && is_array($rule['attributes'])) {
+            foreach ($rule['attributes'] as $attribute_name => $terms) {
+                if (is_array($terms)) {
+                    $sanitized_rule['attributes'][$attribute_name] = array_map('sanitize_text_field', $terms);
+                } elseif (is_string($terms)) {
+                    $sanitized_rule['attributes'][$attribute_name] = array_map('sanitize_text_field', explode(',', $terms));
+                } else {
+                    $sanitized_rule['attributes'][$attribute_name] = [];
                 }
             }
-
-            $sanitized_rule['material_ids'] = json_decode(wp_kses_post($rule['material_ids']), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                add_settings_error(
-                    'pca_rules',
-                    'pca_rules_json_error',
-                    __('Invalid JSON format for Material IDs.', 'product-creation-assistant'),
-                    'error'
-                );
-                continue;
-            }
-
-            $sanitized_rules[] = $sanitized_rule;
+        } else {
+            $sanitized_rule['attributes'] = []; // Default to empty if not set or not an array
         }
+
+        $sanitized_rules[] = $sanitized_rule;
     }
 
-    return json_encode($sanitized_rules);
+    return $sanitized_rules;
 }
 
 // AJAX handler to get terms of a selected attribute
@@ -377,7 +316,28 @@ function pca_get_attribute_terms() {
             wp_send_json_error(array('message' => __('Invalid attribute', 'product-creation-assistant')));
         }
     } else {
-        wp_send_json_error(array('message' => __('No attribute specified', 'product-creation-assistant')));
+        wp_send_json_error(array('message' => __('No attribute specified', 'product-creation-assistant');)
     }
 }
 add_action('wp_ajax_get_attribute_terms', 'pca_get_attribute_terms');
+
+// Function to handle the deletion of a rule via AJAX
+function pca_delete_rule() {
+    if (isset($_POST['index'])) {
+        $index = intval($_POST['index']);
+        $rules = get_option('pca_rules', []);
+
+        if (isset($rules[$index])) {
+            unset($rules[$index]);
+            // Reindex the array to ensure indexes are sequential
+            $rules = array_values($rules);
+            update_option('pca_rules', $rules);
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(array('message' => 'Rule not found.'));
+        }
+    } else {
+        wp_send_json_error(array('message' => 'Invalid request.'));
+    }
+}
+add_action('wp_ajax_delete_pca_rule', 'pca_delete_rule');
