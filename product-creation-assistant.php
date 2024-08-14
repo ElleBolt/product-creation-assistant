@@ -19,7 +19,7 @@ function pca_register_settings() {
     add_settings_section(
         'pca_rules_section', 
         __('Product Creation Rules', 'product-creation-assistant'), 
-        'pca_rules_section_callback', // Ensure this function is defined
+        'pca_rules_section_callback', 
         'product-creation-assistant'
     );
 
@@ -38,7 +38,7 @@ function pca_rules_section_callback() {
     echo __('Define the rules for creating product variations based on product types, sizes, and colors.', 'product-creation-assistant');
 }
 
-// Define the field callback function (replace with the updated dynamic form code provided earlier)
+// Define the field callback function
 function pca_rules_field_callback() {
     // Retrieve saved rules from the database
     $rules = get_option('pca_rules', []);
@@ -74,12 +74,9 @@ function pca_rules_field_callback() {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded event fired'); // Debugging line
-
             let ruleIndex = <?php echo count($rules); ?>;
 
             document.getElementById('add-rule').addEventListener('click', function() {
-                console.log('Add New Rule button clicked'); // Debugging line
                 let ruleTemplate = `
                     <div class="rule-item">
                         <h4><?php _e('New Rule', 'product-creation-assistant'); ?></h4>
@@ -100,6 +97,12 @@ function pca_rules_field_callback() {
                 `;
                 document.getElementById('rules-list').insertAdjacentHTML('beforeend', ruleTemplate);
                 ruleIndex++;
+            });
+
+            document.getElementById('rules-list').addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-rule')) {
+                    e.target.closest('.rule-item').remove();
+                }
             });
         });
     </script>
@@ -132,7 +135,6 @@ function pca_sanitize_rules($input) {
 
     return $sanitized_rules;
 }
-
 
 // Add a custom menu page under WooCommerce
 function pca_register_custom_menu_page() {
