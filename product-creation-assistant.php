@@ -135,18 +135,18 @@ function pca_render_settings_page() {
                 </tr>
             </thead>
             <tbody id="rules-wrapper">
-                <?php if (!empty($saved_rules)): ?>
-                    <?php foreach ($saved_rules as $index => $rule): ?>
-                        <tr>
-                            <td><?php echo esc_html($rule['name']); ?></td>
-                            <td>
-                                <button type="button" class="button edit-rule" data-index="<?php echo $index; ?>"><?php _e('Edit', 'product-creation-assistant'); ?></button>
-                                <button type="button" class="button delete-rule" data-index="<?php echo $index; ?>"><?php _e('Delete', 'product-creation-assistant'); ?></button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
+            <?php if (!empty($saved_rules)): ?>
+                <?php foreach ($saved_rules as $index => $rule): ?>
+                    <tr>
+                        <td><?php echo esc_html($rule['name']); ?></td>
+                        <td>
+                            <button type="button" class="button edit-rule" data-index="<?php echo $index; ?>"><?php _e('Edit', 'product-creation-assistant'); ?></button>
+                            <button type="button" class="button delete-rule" data-index="<?php echo $index; ?>"><?php _e('Delete', 'product-creation-assistant'); ?></button>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
         </table>
 
         <button type="button" id="add-rule" class="button button-primary"><?php _e('Add New Rule', 'product-creation-assistant'); ?></button>
