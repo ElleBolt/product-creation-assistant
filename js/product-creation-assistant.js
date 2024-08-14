@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log("DOM fully loaded and parsed");
 
     const addRuleButton = document.getElementById('add-rule');
@@ -17,62 +17,78 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    addRuleButton.addEventListener('click', function() {
+    // Show the New Rule form when clicking "Add New Rule"
+    addRuleButton.addEventListener('click', function () {
         newRuleForm.style.display = 'block';
-        addRuleButton.style.display = 'none';
     });
 
-    cancelRuleButton.addEventListener('click', function() {
+    // Hide the New Rule form when clicking "Cancel"
+    cancelRuleButton.addEventListener('click', function () {
         newRuleForm.style.display = 'none';
-        addRuleButton.style.display = 'block';
     });
 
-    // Handle the "Add existing" dropdown selection
-    document.addEventListener('change', function(e) {
-        if (e.target && e.target.classList.contains('existing-attribute-dropdown')) {
-            let attribute = e.target.value;
-            if (attribute) {
-                let wrapper = newRuleForm.querySelector('.attributes-wrapper');
-                
-                // Add the field for the attribute before fetching terms
-                let attrTemplate = `
-                    <div class="form-field attribute-item">
-                        <label>` + attribute + `:</label>
-                        <select name="attributes[` + attribute + `][]" multiple="multiple" class="wc-enhanced-select deferred-select">
-                            <option value=""><?php _e('Searching...', 'product-creation-assistant'); ?></option>
-                        </select>
-                        <button type="button" class="button remove-attribute"><?php _e('Remove', 'product-creation-assistant'); ?></button>
-                    </div>
-                `;
-                wrapper.insertAdjacentHTML('beforeend', attrTemplate);
+    // Save the rule when clicking "Save Rule"
+    saveRuleButton.addEventListener('click', function () {
+        const ruleNameInput = newRuleForm.querySelector('input[name="rule_name"]');
+        const materialIdsTextarea = newRuleForm.querySelector('textarea[name="material_ids"]');
 
-                let selectBox = jQuery(wrapper).find('.deferred-select').last(); // Correcting to treat as jQuery object
+        const ruleName = ruleNameInput.value;
+        const materialIds = materialIdsTextarea.value;
 
-                // Initialize chosen.js on the new select element
-                selectBox.chosen({
-                    width: '100%',
-                    placeholder_text_multiple: "<?php _e('Select terms', 'product-creation-assistant'); ?>",
-                    no_results_text: "<?php _e('No terms found', 'product-creation-assistant'); ?>"
-                }).on('chosen:showing_dropdown', function() {
-                    if (!selectBox.data('loaded')) {
-                        fetch(`<?php echo admin_url('admin-ajax.php'); ?>?action=get_attribute_terms&attribute_name=${attribute}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                let options = '';
-                                if (data.success && data.data.terms.length > 0) {
-                                    options = data.data.terms.map(term => `<option value="${term.slug}">${term.name}</option>`).join('');
-                                } else {
-                                    options = '<option value=""><?php _e('No terms found', 'product-creation-assistant'); ?></option>';
-                                }
-                                selectBox.html('<option value=""></option>' + options).trigger("chosen:updated");
-                                selectBox.data('loaded', true);
-                            })
-                            .catch(error => {
-                                console.error('Error fetching terms:', error);
-                            });
-                    }
-                });
-            }
+        // Create a new row for the rule
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>${ruleName}</td>
+            <td>
+                <button type="button" class="button edit-rule">Edit</button>
+                <button type="button" class="button delete-rule">Delete</button>
+            </td>
+        `;
+
+        // Append the new rule to the table
+        rulesWrapper.appendChild(newRow);
+
+        // Clear the form
+        ruleNameInput.value = '';
+        materialIdsTextarea.value = '';
+
+        // Hide the form
+        newRuleForm.style.display = 'none';
+    });
+
+    // Delete a rule
+    rulesWrapper.addEventListener('click', function (e) {
+        if (e.target.classList.contains('delete-rule')) {
+            const row = e.target.closest('tr');
+            row.remove();
         }
+    });
+
+    // Initialize Chosen.js on select fields within the form
+    document.querySelectorAll('.existing-attribute-dropdown').forEach(function (selectBox) {
+        selectBox.chosen({
+            width: '100%',
+            placeholder_text_multiple: productCreationAssistant.selectTerms,
+            no_results_text: productCreationAssistant.noTermsFound
+        }).on('chosen:showing_dropdown', function () {
+            if (!selectBox.dataset.loaded) {
+                fetch(`${adminUrl}?action=get_attribute_terms&attribute_name=${selectBox.value}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        let options = '';
+                        if (data.success && data.data.terms.length > 0) {
+                            options = data.data.terms.map(term => `<option value="${term.slug}">${term.name}</option>`).join('');
+                        } else {
+                            options = `<option value="">${productCreationAssistant.noTermsFound}</option>`;
+                        }
+                        selectBox.innerHTML = '<option value=""></option>' + options;
+                        selectBox.dispatchEvent(new Event("chosen:updated"));
+                        selectBox.dataset.loaded = true;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching terms:', error);
+                    });
+            }
+        });
     });
 });

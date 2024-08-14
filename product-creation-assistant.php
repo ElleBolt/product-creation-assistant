@@ -24,6 +24,14 @@ function pca_enqueue_scripts() {
     // Pass PHP data to JavaScript
     $saved_rules = get_option('pca_rules', []);
     wp_localize_script('pca-js', 'pcaRules', $saved_rules);
+
+    // Pass localized strings to JavaScript
+    wp_localize_script('pca-js', 'productCreationAssistant', array(
+        'searching' => __('Searching...', 'product-creation-assistant'),
+        'remove' => __('Remove', 'product-creation-assistant'),
+        'noTermsFound' => __('No terms found', 'product-creation-assistant'),
+        'selectTerms' => __('Select terms', 'product-creation-assistant'),
+    ));
 }
 add_action('admin_enqueue_scripts', 'pca_enqueue_scripts');
 
