@@ -1,96 +1,108 @@
-(function($) {
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log("DOM fully loaded and parsed");
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('DOM fully loaded and parsed');
 
-        const addRuleButton = document.getElementById('add-rule');
-        const newRuleForm = document.getElementById('new-rule-form');
-        const saveRuleButton = document.getElementById('save-rule');
-        const cancelRuleButton = document.getElementById('cancel-rule');
-        const rulesWrapper = document.getElementById('rules-wrapper');
-
-        if (!addRuleButton) {
-            console.log("Add Rule Button not found");
-            return;
-        }
-
-        if (!newRuleForm) {
-            console.log("New Rule Form not found");
-            return;
-        }
-
-        // Show the New Rule form when clicking "Add New Rule"
+    // Add New Rule Button
+    const addRuleButton = document.getElementById('add-rule');
+    if (addRuleButton) {
         addRuleButton.addEventListener('click', function () {
-            newRuleForm.style.display = 'block';
+            document.getElementById('new-rule-form').style.display = 'block';
         });
+    } else {
+        console.error('Add Rule Button not found');
+    }
 
-        // Hide the New Rule form when clicking "Cancel"
-        cancelRuleButton.addEventListener('click', function () {
-            newRuleForm.style.display = 'none';
-        });
-
-        // Save the rule when clicking "Save Rule"
+    // Save Rule Button
+    const saveRuleButton = document.getElementById('save-rule');
+    if (saveRuleButton) {
         saveRuleButton.addEventListener('click', function () {
-            const ruleNameInput = newRuleForm.querySelector('input[name="rule_name"]');
-            const materialIdsTextarea = newRuleForm.querySelector('textarea[name="material_ids"]');
-
-            const ruleName = ruleNameInput.value;
-            const materialIds = materialIdsTextarea.value;
-
-            // Create a new row for the rule
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${ruleName}</td>
-                <td>
-                    <button type="button" class="button edit-rule">Edit</button>
-                    <button type="button" class="button delete-rule">Delete</button>
-                </td>
-            `;
-
-            // Append the new rule to the table
-            rulesWrapper.appendChild(newRow);
-
-            // Clear the form
-            ruleNameInput.value = '';
-            materialIdsTextarea.value = '';
-
-            // Hide the form
-            newRuleForm.style.display = 'none';
+            // Handle rule saving logic
         });
+    }
 
-        // Delete a rule
-        rulesWrapper.addEventListener('click', function (e) {
-            if (e.target.classList.contains('delete-rule')) {
-                const row = e.target.closest('tr');
-                row.remove();
+    // Cancel Button
+    const cancelRuleButton = document.getElementById('cancel-rule');
+    if (cancelRuleButton) {
+        cancelRuleButton.addEventListener('click', function () {
+            document.getElementById('new-rule-form').style.display = 'none';
+        });
+    }
+
+    // Edit Button functionality
+    document.querySelectorAll('.edit-rule').forEach(button => {
+        button.addEventListener('click', function () {
+            const index = this.getAttribute('data-index');
+            const rule = pcaRules[index];
+
+            if (rule) {
+                // Populate the form with the existing rule data
+                document.getElementById('new-rule-form').style.display = 'block';
+                document.getElementById('rule-name').value = rule.name;
+                // Populate attributes and material IDs
+                populateAttributes(rule.attributes);
+                document.getElementById('material-ids').value = JSON.stringify(rule.material_ids);
             }
         });
+    });
 
-        // Initialize Chosen.js on select fields within the form
-        document.querySelectorAll('.existing-attribute-dropdown').forEach(function (selectBox) {
-            $(selectBox).chosen({
-                width: '100%',
-                placeholder_text_multiple: productCreationAssistant.selectTerms,
-                no_results_text: productCreationAssistant.noTermsFound
-            }).on('chosen:showing_dropdown', function () {
-                if (!selectBox.dataset.loaded) {
-                    fetch(`${productCreationAssistant.adminUrl}?action=get_attribute_terms&attribute_name=${selectBox.value}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            let options = '';
-                            if (data.success && data.data.terms.length > 0) {
-                                options = data.data.terms.map(term => `<option value="${term.slug}">${term.name}</option>`).join('');
-                            } else {
-                                options = `<option value="">${productCreationAssistant.noTermsFound}</option>`;
-                            }
-                            selectBox.innerHTML = '<option value=""></option>' + options;
-                            $(selectBox).trigger("chosen:updated");
-                            selectBox.dataset.loaded = true;
-                        })
-                        .catch(error => {
-                            console.error('Error fetching terms:', error);
-                        });
+    // Populate Attributes in the Form
+    function populateAttributes(attributes) {
+        const attributesWrapper = document.querySelector('.attributes-wrapper');
+        attributesWrapper.innerHTML = ''; // Clear existing attributes
+
+        for (const attrName in attributes) {
+            if (attributes.hasOwnProperty(attrName)) {
+                const terms = attributes[attrName];
+                let attrTemplate = `
+                    <div class="attribute-item">
+                        <label>${attrName}:</label>
+                        <select name="attributes[${attrName}][]" multiple="multiple" class="wc-enhanced-select">
+                `;
+                terms.forEach(term => {
+                    attrTemplate += `<option value="${term}" selected>${term}</option>`;
+                });
+                attrTemplate += `</select><button type="button" class="button remove-attribute">Remove</button></div>`;
+                attributesWrapper.insertAdjacentHTML('beforeend', attrTemplate);
+            }
+        }
+
+        // Reinitialize select2 or chosen after dynamically adding elements
+        jQuery('.wc-enhanced-select').select2({
+            placeholder: "Select terms"
+        });
+    }
+
+    // Event Listener for the "Add Existing" Dropdown
+    document.querySelector('.existing-attribute-dropdown').addEventListener('change', function () {
+        const attribute = this.value;
+        if (attribute) {
+            fetchAttributeTerms(attribute);
+        }
+    });
+
+    function fetchAttributeTerms(attribute) {
+        fetch(`admin-ajax.php?action=get_attribute_terms&attribute_name=${attribute}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data.terms.length > 0) {
+                    const terms = data.data.terms;
+                    let options = '';
+                    terms.forEach(term => {
+                        options += `<option value="${term.slug}">${term.name}</option>`;
+                    });
+                    const attributesWrapper = document.querySelector('.attributes-wrapper');
+                    attributesWrapper.insertAdjacentHTML('beforeend', `
+                        <div class="attribute-item">
+                            <label>${attribute}:</label>
+                            <select name="attributes[${attribute}][]" multiple="multiple" class="wc-enhanced-select">
+                                ${options}
+                            </select>
+                            <button type="button" class="button remove-attribute">Remove</button>
+                        </div>
+                    `);
+                    jQuery('.wc-enhanced-select').select2({
+                        placeholder: "Select terms"
+                    });
                 }
             });
-        });
-    });
-})(jQuery);
+    }
+});
