@@ -316,7 +316,7 @@ function pca_get_attribute_terms() {
             wp_send_json_error(array('message' => __('Invalid attribute', 'product-creation-assistant')));
         }
     } else {
-        wp_send_json_error(array('message' => __('No attribute specified', 'product-creation-assistant');)
+        wp_send_json_error(array('message' => __('No attribute specified', 'product-creation-assistant')));
     }
 }
 add_action('wp_ajax_get_attribute_terms', 'pca_get_attribute_terms');
