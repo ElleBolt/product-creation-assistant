@@ -1,6 +1,32 @@
 jQuery(document).ready(function ($) {
     console.log("DOM fully loaded and parsed");
 
+    // Delete Rule Button Click
+    $(document).on('click', '.delete-rule', function () {
+        if (confirm('Are you sure you want to delete this rule?')) {
+            const ruleIndex = $(this).data('index');
+            
+            $.ajax({
+                url: productCreationAssistant.adminUrl,
+                method: 'POST',
+                data: {
+                    action: 'delete_pca_rule',
+                    index: ruleIndex,
+                },
+                success: function (response) {
+                    if (response.success) {
+                        location.reload(); // Reload the page to see the updated rules list
+                    } else {
+                        alert('Failed to delete the rule. Please try again.');
+                    }
+                },
+                error: function () {
+                    alert('An error occurred. Please try again.');
+                }
+            });
+        }
+    });
+
     // Add Rule Button Click
     const addRuleBtn = document.getElementById('add-rule');
     const newRuleForm = document.getElementById('new-rule-form');
