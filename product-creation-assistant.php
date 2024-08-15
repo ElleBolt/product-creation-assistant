@@ -166,15 +166,20 @@ add_action('wp_ajax_get_attribute_terms', 'pca_get_attribute_terms');
 function pca_delete_rule() {
     if (isset($_POST['rule_id'])) {
         $rule_id = sanitize_text_field($_POST['rule_id']);
-        delete_option("pca_rule_$rule_id");
-        wp_send_json_success();
+        $deleted = delete_option("pca_rule_$rule_id");
+
+        if ($deleted) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(['message' => 'Failed to delete the rule.']);
+        }
     } else {
-        wp_send_json_error(array('message' => 'Invalid request.'));
+        wp_send_json_error(['message' => 'Invalid request.']);
     }
 }
 add_action('wp_ajax_delete_pca_rule', 'pca_delete_rule');
 
-// Function to handle saving a new rule via AJAX
+// Function to handle saving a new or existing rule via AJAX
 function pca_save_rule() {
     if (isset($_POST['rule_name'], $_POST['attributes'])) {
         $rule_name = sanitize_text_field($_POST['rule_name']);
@@ -201,12 +206,11 @@ function pca_save_rule() {
             'attributes' => $attributes,
         ];
 
-        // Check if we are editing an existing rule
+        // Handle both new and existing rules
         if (isset($_POST['rule_id']) && !empty($_POST['rule_id'])) {
             $rule_id = sanitize_text_field($_POST['rule_id']);
             update_option("pca_rule_$rule_id", $rule_data);
         } else {
-            // Generate a unique ID for the new rule
             $rule_id = uniqid();
             add_option("pca_rule_$rule_id", $rule_data);
         }

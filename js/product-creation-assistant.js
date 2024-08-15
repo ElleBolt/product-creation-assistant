@@ -5,13 +5,14 @@ jQuery(document).ready(function ($) {
     $(document).on('click', '.delete-rule', function () {
         if (confirm('Are you sure you want to delete this rule?')) {
             const ruleIndex = $(this).data('index');
-
+            const ruleId = pcaRules[ruleIndex].id; // Get the rule ID based on the index
+    
             $.ajax({
                 url: productCreationAssistant.adminUrl,
                 method: 'POST',
                 data: {
                     action: 'delete_pca_rule',
-                    index: ruleIndex,
+                    rule_id: ruleId, // Send the rule ID to the backend
                 },
                 success: function (response) {
                     if (response.success) {
@@ -65,7 +66,7 @@ jQuery(document).ready(function ($) {
                 return;
             }
     
-            // Check if we're editing an existing rule
+            // Determine if we are editing an existing rule
             const ruleId = editIndex !== null ? pcaRules[editIndex].id : null;
     
             // Send data via AJAX
@@ -77,7 +78,7 @@ jQuery(document).ready(function ($) {
                     rule_name: ruleName,
                     material_ids: materialIds,
                     attributes: attributes,
-                    rule_id: ruleId // Include rule ID if editing
+                    rule_id: ruleId // Ensure rule ID is sent if editing
                 },
                 success: function (response) {
                     if (response.success) {
