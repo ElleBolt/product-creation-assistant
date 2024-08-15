@@ -56,7 +56,9 @@ function pca_get_all_rules() {
 
     $decoded_rules = [];
     foreach ($rules as $rule) {
-        $decoded_rules[$rule->option_name] = maybe_unserialize($rule->option_value);
+        $rule_id = str_replace('pca_rule_', '', $rule->option_name);
+        $decoded_rules[$rule_id] = maybe_unserialize($rule->option_value);
+        $decoded_rules[$rule_id]['id'] = $rule_id;  // Add the rule ID to the array
     }
 
     return $decoded_rules;
@@ -94,12 +96,12 @@ function pca_render_settings_page() {
             </thead>
             <tbody id="rules-wrapper">
             <?php if (!empty($saved_rules)): ?>
-                <?php foreach ($saved_rules as $rule_id => $rule): ?>
+                <?php foreach ($saved_rules as $index => $rule): ?>
                     <tr>
                         <td><?php echo esc_html($rule['name']); ?></td>
                         <td>
-                            <button type="button" class="button edit-rule" data-rule-id="<?php echo esc_attr($rule_id); ?>"><?php _e('Edit', 'product-creation-assistant'); ?></button>
-                            <button type="button" class="button delete-rule" data-rule-id="<?php echo esc_attr($rule_id); ?>"><?php _e('Delete', 'product-creation-assistant'); ?></button>
+                            <button type="button" class="button edit-rule" data-index="<?php echo esc_attr($index); ?>" data-id="<?php echo esc_attr($rule['id']); ?>"><?php _e('Edit', 'product-creation-assistant'); ?></button>
+                            <button type="button" class="button delete-rule" data-index="<?php echo esc_attr($index); ?>" data-id="<?php echo esc_attr($rule['id']); ?>"><?php _e('Delete', 'product-creation-assistant'); ?></button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -177,13 +179,27 @@ function pca_save_rule() {
     if (isset($_POST['rule_name'], $_POST['attributes'])) {
         $rule_name = sanitize_text_field($_POST['rule_name']);
         $material_ids = sanitize_text_field($_POST['material_ids']);
-        $attributes = array_map('sanitize_text_field', $_POST['attributes']);
+        $attributes = [];
+
+        foreach ($_POST['attributes'] as $attribute_name => $terms) {
+            $terms_with_labels = [];
+            foreach ($terms as $term_slug) {
+                $term = get_term_by('slug', $term_slug, wc_attribute_taxonomy_name($attribute_name));
+                if ($term) {
+                    $terms_with_labels[] = [
+                        'slug' => $term->slug,
+                        'name' => $term->name
+                    ];
+                }
+            }
+            $attributes[$attribute_name] = $terms_with_labels;
+        }
         
-        $rule_data = array(
+        $rule_data = [
             'name' => $rule_name,
             'material_ids' => $material_ids,
             'attributes' => $attributes,
-        );
+        ];
 
         // Check if we are editing an existing rule
         if (isset($_POST['rule_id']) && !empty($_POST['rule_id'])) {
@@ -197,7 +213,7 @@ function pca_save_rule() {
 
         wp_send_json_success();
     } else {
-        wp_send_json_error(array('message' => 'Invalid data.'));
+        wp_send_json_error(['message' => 'Invalid data.']);
     }
 }
 add_action('wp_ajax_save_pca_rule', 'pca_save_rule');

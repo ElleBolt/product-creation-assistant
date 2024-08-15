@@ -106,22 +106,33 @@ jQuery(document).ready(function ($) {
 
     // Edit Rule Button Click
     $(document).on('click', '.edit-rule', function () {
-        const ruleId = $(this).data('rule-id');
-        const rule = pcaRules[ruleId];
-    
+        const ruleIndex = $(this).data('index');
+        const ruleId = $(this).data('id'); // Get the rule_id from the button
+        const rule = pcaRules[ruleIndex];
+
         // Update form title
         document.querySelector('#new-rule-form h2').textContent = 'Edit Rule';
-    
+
         // Populate form fields with the existing rule data
         document.querySelector('[name="rule_name"]').value = rule.name;
         document.querySelector('[name="material_ids"]').value = JSON.stringify(rule.material_ids);
-    
+
         // Populate attributes
         populateAttributes(rule.attributes);
-    
+
+        // Store the rule ID in a hidden input field
+        if (!document.querySelector('[name="rule_id"]')) {
+            const ruleIdInput = document.createElement('input');
+            ruleIdInput.type = 'hidden';
+            ruleIdInput.name = 'rule_id';
+            ruleIdInput.value = ruleId;
+            document.querySelector('#new-rule-form').appendChild(ruleIdInput);
+        } else {
+            document.querySelector('[name="rule_id"]').value = ruleId;
+        }
+
         // Show the form and set editIndex
         newRuleForm.style.display = 'block';
-        editIndex = ruleId; // Use rule ID for editing
     });
 
     // Function to populate attributes in the form
@@ -145,19 +156,17 @@ jQuery(document).ready(function ($) {
     
                 const selectBox = wrapper.find('.deferred-select').last();
     
-                // Prepopulate with existing terms
-                let options = terms.map(term => `<option value="${term.slug}" selected>${term.label}</option>`).join('');
-                selectBox.html(options);
+                // Check if terms is an array before mapping
+                if (Array.isArray(terms)) {
+                    // Populate the select box with saved terms
+                    let options = terms.map(term => {
+                        return `<option value="${term.slug}" selected>${term.name}</option>`;
+                    }).join('');
     
-                // Initialize Chosen.js with the preloaded options
-                selectBox.chosen({
-                    width: '100%',
-                    placeholder_text_multiple: productCreationAssistant.selectTerms,
-                    no_results_text: productCreationAssistant.noTermsFound,
-                    search_contains: true
-                });
+                    selectBox.html(options);
+                }
     
-                // Bind focus event to load new options via AJAX
+                // Bind focus event to load additional options when the user focuses on the dropdown
                 selectBox.one('focus', function () {
                     $.ajax({
                         url: productCreationAssistant.adminUrl,
@@ -167,19 +176,24 @@ jQuery(document).ready(function ($) {
                             attribute_name: attributeName,
                         },
                         success: function (response) {
-                            if (response.success && response.data.terms.length > 0) {
-                                let newOptions = response.data.terms.map(term => {
-                                    if (!selectBox.find(`option[value="${term.slug}"]`).length) {
-                                        return `<option value="${term.slug}">${term.name}</option>`;
-                                    }
+                            let options = '';
+                            if (response.success && Array.isArray(response.data.terms)) {
+                                options = response.data.terms.map(term => {
+                                    const selected = terms.some(t => t.slug === term.slug) ? 'selected' : '';
+                                    return `<option value="${term.slug}" ${selected}>${term.name}</option>`;
                                 }).join('');
-    
-                                selectBox.append(newOptions);
-                                selectBox.trigger("chosen:updated");
+                            } else {
+                                options = `<option value="">${productCreationAssistant.noTermsFound}</option>`;
                             }
+                            selectBox.html(options);
+                            selectBox.chosen({
+                                width: '100%',
+                                placeholder_text_multiple: productCreationAssistant.selectTerms,
+                                no_results_text: productCreationAssistant.noTermsFound
+                            }).trigger("chosen:updated");
                         },
                         error: function () {
-                            console.error('Failed to load new terms');
+                            selectBox.html(`<option value="">${productCreationAssistant.noTermsFound}</option>`);
                         }
                     });
                 });
