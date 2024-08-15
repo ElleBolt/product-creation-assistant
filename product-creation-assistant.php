@@ -32,7 +32,7 @@ function pca_register_product_rule_post_type() {
     $args = array(
         'labels'             => $labels,
         'public'             => true,
-        'publicly_queryable' => true,
+        'publicly queryable' => true,
         'show_ui'            => true,
         'show_in_menu'       => true,
         'query_var'          => true,
@@ -209,28 +209,3 @@ function pca_render_existing_attribute_row($attribute_name, $attribute_label) {
     <?php
     return ob_get_clean();
 }
-
-// Save the Product Rule Attributes
-function pca_save_product_rule_attributes($post_id) {
-    if (isset($_POST['pca_attributes_names']) && isset($_POST['pca_attributes_values'])) {
-        $attributes = [];
-        $names = array_map('sanitize_text_field', $_POST['pca_attributes_names']);
-        $values = array_map('sanitize_text_field', $_POST['pca_attributes_values']);
-        $visibility = isset($_POST['pca_attributes_visibility']) ? array_map('intval', $_POST['pca_attributes_visibility']) : [];
-        $variation = isset($_POST['pca_attributes_variation']) ? array_map('intval', $_POST['pca_attributes_variation']) : [];
-        $term_values = isset($_POST['pca_attributes_term_values']) ? $_POST['pca_attributes_term_values'] : [];
-
-        for ($i = 0; $i < count($names); $i++) {
-            $attributes[] = [
-                'name' => $names[$i],
-                'values' => explode(',', $values[$i]),
-                'visibility' => isset($visibility[$i]) ? $visibility[$i] : 0,
-                'variation' => isset($variation[$i]) ? $variation[$i] : 0,
-                'term_values' => isset($term_values[$names[$i]]) ? array_map('sanitize_text_field', $term_values[$names[$i]]) : []
-            ];
-        }
-
-        update_post_meta($post_id, '_pca_product_rule_attributes', $attributes);
-    }
-}
-add_action('save_post', 'pca_save_product_rule_attributes');
