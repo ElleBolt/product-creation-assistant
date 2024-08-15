@@ -52,7 +52,15 @@ class PCA_Meta_Boxes {
     
     private function render_attribute_row($attribute = []) {
         $attribute_name = isset($attribute['name']) ? esc_attr($attribute['name']) : '';
-        $attribute_values = isset($attribute['values']) ? implode(',', $attribute['values']) : '';
+        $taxonomy = wc_attribute_taxonomy_name($attribute_name); // Get taxonomy from the attribute name
+        $selected_terms = isset($attribute['values']) ? (array) $attribute['values'] : [];
+    
+        if (taxonomy_exists($taxonomy)) {
+            $terms = get_terms($taxonomy, array('hide_empty' => false));
+        } else {
+            $terms = [];
+        }
+    
         ?>
         <div class="woocommerce_attribute wc-metabox closed">
             <h3>
@@ -64,15 +72,29 @@ class PCA_Meta_Boxes {
                     <tbody>
                         <tr>
                             <td class="attribute_name">
-                                <input type="hidden" name="pca_attributes_names[]" value="<?php echo esc_attr($attribute_name); ?>" />
-                                <input type="hidden" name="pca_attributes_labels[]" value="<?php echo esc_attr($attribute_name); ?>" />
-                                <input type="text" name="pca_attributes_values[<?php echo esc_attr($attribute_name); ?>][]" value="<?php echo esc_attr($attribute_values); ?>" placeholder="<?php esc_attr_e('Values (comma-separated)', 'product-creation-assistant'); ?>" />
+                                <input type="text" name="pca_attributes_names[]" value="<?php echo esc_attr($attribute_name); ?>" placeholder="<?php esc_attr_e('Attribute Name', 'product-creation-assistant'); ?>" />
                             </td>
-                            <td class="attribute_visibility">
-                                <input type="checkbox" name="pca_attributes_visibility[<?php echo esc_attr($attribute_name); ?>]" value="1" checked="checked" /> <?php _e('Visible on the product page', 'product-creation-assistant'); ?>
+                            <td class="attribute_values">
+                                <select multiple="multiple" name="pca_attributes_values[<?php echo esc_attr($taxonomy); ?>][]" class="wc-enhanced-select">
+                                    <?php foreach ($terms as $term): ?>
+                                        <option value="<?php echo esc_attr($term->term_id); ?>" <?php selected(in_array($term->term_id, $selected_terms), true); ?>>
+                                            <?php echo esc_html($term->name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button class="button add_new_attribute_term" data-taxonomy="<?php echo esc_attr($taxonomy); ?>"><?php _e('Add New Term', 'product-creation-assistant'); ?></button>
                             </td>
-                            <td class="attribute_variation">
-                                <input type="checkbox" name="pca_attributes_variation[<?php echo esc_attr($attribute_name); ?>]" value="1" /> <?php _e('Used for variations', 'product-creation-assistant'); ?>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <label>
+                                    <input type="checkbox" class="pca_attributes_visibility" name="pca_attributes_visibility[<?php echo esc_attr($taxonomy); ?>]" <?php checked(isset($attribute['visible']) ? $attribute['visible'] : false, true); ?> />
+                                    <?php _e('Visible on the product page', 'product-creation-assistant'); ?>
+                                </label>
+                                <label>
+                                    <input type="checkbox" class="pca_attributes_variation" name="pca_attributes_variation[<?php echo esc_attr($taxonomy); ?>]" <?php checked(isset($attribute['variation']) ? $attribute['variation'] : false, true); ?> />
+                                    <?php _e('Used for variations', 'product-creation-assistant'); ?>
+                                </label>
                             </td>
                         </tr>
                     </tbody>
