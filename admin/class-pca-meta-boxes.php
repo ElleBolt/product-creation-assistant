@@ -1,3 +1,4 @@
+<?php
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
@@ -145,7 +146,7 @@ class PCA_Meta_Boxes {
                                     }
                                     ?>
                                 </select>
-                                <button class="button add_new_attribute_term"><?php _e('Add New', 'product-creation-assistant'); ?></button>
+                                <button class="button add_new_attribute_term" data-taxonomy="<?php echo esc_attr($attribute_name); ?>"><?php _e('Add New Term', 'product-creation-assistant'); ?></button>
                             </td>
                         </tr>
                     </tbody>
@@ -165,15 +166,16 @@ class PCA_Meta_Boxes {
 
         if (!taxonomy_exists($attribute_name)) {
             wp_send_json_error(array('message' => 'Invalid attribute.'));
+            return; // Exit early to prevent further execution
         }
 
         $term = wp_insert_term($term_name, $attribute_name);
 
         if (is_wp_error($term)) {
             wp_send_json_error(array('message' => $term->get_error_message()));
+        } else {
+            wp_send_json_success(array('term_name' => $term_name, 'term_slug' => $term['term_id']));
         }
-
-        wp_send_json_success(array('term_name' => $term_name, 'term_slug' => $term['term_id']));
     }
 }
 
