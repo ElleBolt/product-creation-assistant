@@ -106,22 +106,22 @@ jQuery(document).ready(function ($) {
 
     // Edit Rule Button Click
     $(document).on('click', '.edit-rule', function () {
-        const ruleIndex = $(this).data('index');
-        const rule = pcaRules[ruleIndex];
-
+        const ruleId = $(this).data('rule-id');
+        const rule = pcaRules[ruleId];
+    
         // Update form title
         document.querySelector('#new-rule-form h2').textContent = 'Edit Rule';
-
+    
         // Populate form fields with the existing rule data
         document.querySelector('[name="rule_name"]').value = rule.name;
         document.querySelector('[name="material_ids"]').value = JSON.stringify(rule.material_ids);
-
+    
         // Populate attributes
         populateAttributes(rule.attributes);
-
+    
         // Show the form and set editIndex
         newRuleForm.style.display = 'block';
-        editIndex = ruleIndex;
+        editIndex = ruleId; // Use rule ID for editing
     });
 
     // Function to populate attributes in the form
