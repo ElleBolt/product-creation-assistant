@@ -44,63 +44,8 @@ function pca_enqueue_admin_styles() {
     wp_enqueue_script('select2', WC()->plugin_url() . '/assets/js/select2/select2.full.min.js', array('jquery'), '4.0.3', true);
     wp_enqueue_style('select2', WC()->plugin_url() . '/assets/css/select2.css', array(), '4.0.3');
 
-    // Add custom styles for the Product Creation Assistant UI
-    $custom_css = "
-        #pca-rules-wrapper .rule-item {
-            background: #f9f9f9;
-            border: 1px solid #e0e0e0;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-        #pca-rules-wrapper h4 {
-            margin-bottom: 10px;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        #pca-rules-wrapper label {
-            font-weight: 600;
-            margin-right: 10px;
-            display: inline-block;
-            margin-bottom: 5px;
-        }
-        #pca-rules-wrapper input[type='text'], #pca-rules-wrapper select, #pca-rules-wrapper textarea {
-            width: 100%;
-            max-width: 500px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        #pca-rules-wrapper .button {
-            background: #7f54b3;
-            border-color: #7f54b3;
-            color: #fff;
-            text-decoration: none;
-            text-shadow: none;
-            border-radius: 4px;
-            padding: 8px 12px;
-        }
-        #pca-rules-wrapper .button:hover {
-            background: #6b4896;
-            border-color: #6b4896;
-        }
-        #pca-rules-wrapper .attribute-add-wrapper {
-            margin-bottom: 10px;
-        }
-        #pca-rules-wrapper .remove-rule, #pca-rules-wrapper .remove-attribute {
-            background: #e2401c;
-            border-color: #e2401c;
-            color: #fff;
-            padding: 5px 10px;
-            margin-top: 5px;
-        }
-        #pca-rules-wrapper .remove-rule:hover, #pca-rules-wrapper .remove-attribute:hover {
-            background: #c22b0a;
-            border-color: #c22b0a;
-        }
-    ";
-    wp_add_inline_style('woocommerce_admin_styles', $custom_css);
+    // Enqueue custom CSS for the Product Creation Assistant
+    wp_enqueue_style('pca-css', plugin_dir_url(__FILE__) . 'css/product-creation-assistant.css', array(), null);
 }
 add_action('admin_enqueue_scripts', 'pca_enqueue_admin_styles');
 
