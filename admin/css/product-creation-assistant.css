@@ -1,1 +1,104 @@
-/* Add or override any styles here to mimic the WooCommerce interface for your Product Rule post type */
+/* General Styles for Product Rule Attributes Meta Box */
+#pca-attributes-wrapper {
+    margin-top: 10px;
+}
+
+#pca-attributes-wrapper .woocommerce_attribute {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    padding: 15px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+#pca-attributes-wrapper .woocommerce_attribute h3 {
+    margin: 0;
+    padding: 0 0 10px 0;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#pca-attributes-wrapper .woocommerce_attribute h3 a.remove_row {
+    float: right;
+    text-decoration: none;
+    color: #a00;
+}
+
+#pca-attributes-wrapper .woocommerce_attribute_data {
+    display: none;
+    padding-top: 10px;
+}
+
+#pca-attributes-wrapper .woocommerce_attribute_data table {
+    width: 100%;
+}
+
+#pca-attributes-wrapper .woocommerce_attribute_data table td {
+    padding: 5px 10px;
+}
+
+#pca-attributes-wrapper .wc-enhanced-select {
+    width: 100%;
+}
+
+#pca-attributes-wrapper .attribute_values input,
+#pca-attributes-wrapper .attribute_values select {
+    width: 100%;
+}
+
+#pca-attributes-wrapper .attribute_name input {
+    width: 100%;
+}
+
+#pca-attributes-wrapper .select_all,
+#pca-attributes-wrapper .select_none {
+    font-size: 12px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+/* Checkbox styling */
+.pca_attributes_visibility,
+.pca_attributes_variation {
+    margin-right: 5px;
+}
+
+/* Styles for Add New Term Button */
+.add_new_attribute_term {
+    background: #007cba;
+    color: #fff;
+    padding: 4px 8px;
+    text-decoration: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 5px;
+    display: inline-block;
+}
+
+.add_new_attribute_term:hover {
+    background: #005f8d;
+    color: #fff;
+}
+
+/* Styles for Select2 Dropdown */
+.select2-container .select2-selection--single {
+    height: 34px;
+    padding-top: 5px;
+}
+
+.select2-container .select2-selection__rendered {
+    line-height: 28px;
+}
+
+.select2-container .select2-selection__arrow {
+    height: 28px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #007cba;
+    border-color: #006ba1;
+    color: white;
+    padding: 2px 5px;
+    margin-top: 3px;
+}
