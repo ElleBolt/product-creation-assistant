@@ -186,13 +186,13 @@ function pca_save_rule() {
         );
 
         // Check if we are editing an existing rule
-        if (isset($_POST['rule_id'])) {
+        if (isset($_POST['rule_id']) && !empty($_POST['rule_id'])) {
             $rule_id = sanitize_text_field($_POST['rule_id']);
-            update_option($rule_id, $rule_data);
+            update_option("pca_rule_$rule_id", $rule_data);
         } else {
             // Generate a unique ID for the new rule
-            $rule_id = 'pca_rule_' . uniqid();
-            add_option($rule_id, $rule_data);
+            $rule_id = uniqid();
+            add_option("pca_rule_$rule_id", $rule_data);
         }
 
         wp_send_json_success();

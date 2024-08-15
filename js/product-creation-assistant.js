@@ -49,8 +49,9 @@ jQuery(document).ready(function ($) {
         saveRuleBtn.addEventListener('click', function () {
             const ruleName = document.querySelector('[name="rule_name"]').value;
             const materialIds = document.querySelector('[name="material_ids"]').value;
-            let attributes = {};
     
+            // Collect attributes
+            let attributes = {};
             $('.attributes-wrapper .attribute-item').each(function () {
                 const attributeName = $(this).find('label').text().replace(':', '');
                 const attributeValues = $(this).find('select').val();
@@ -64,21 +65,20 @@ jQuery(document).ready(function ($) {
                 return;
             }
     
-            const data = {
-                action: 'save_pca_rule',
-                rule_name: ruleName,
-                material_ids: materialIds,
-                attributes: attributes,
-            };
+            // Check if we're editing an existing rule
+            const ruleId = editIndex !== null ? pcaRules[editIndex].id : null;
     
-            if (editIndex !== null) {
-                data.rule_id = editIndex;  // Send the rule ID for editing
-            }
-    
+            // Send data via AJAX
             $.ajax({
                 url: productCreationAssistant.adminUrl,
                 method: 'POST',
-                data: data,
+                data: {
+                    action: 'save_pca_rule',
+                    rule_name: ruleName,
+                    material_ids: materialIds,
+                    attributes: attributes,
+                    rule_id: ruleId // Include rule ID if editing
+                },
                 success: function (response) {
                     if (response.success) {
                         location.reload(); // Reload the page to see the updated rules list
@@ -127,11 +127,11 @@ jQuery(document).ready(function ($) {
     // Function to populate attributes in the form
     function populateAttributes(attributes) {
         $('.attributes-wrapper').empty(); // Clear any existing attributes
-
+    
         if (attributes) {
-            $.each(attributes, function (attributeName, values) {
+            $.each(attributes, function (attributeName, terms) {
                 const wrapper = $('.attributes-wrapper');
-
+    
                 let attrTemplate = `
                     <div class="form-field attribute-item">
                         <label>${attributeName}:</label>
@@ -140,15 +140,25 @@ jQuery(document).ready(function ($) {
                         <button type="button" class="button remove-attribute">${productCreationAssistant.remove}</button>
                     </div>
                 `;
-
+    
                 wrapper.append(attrTemplate);
-
+    
                 const selectBox = wrapper.find('.deferred-select').last();
-
-                // Bind focus event to load options when the user focuses on the dropdown
+    
+                // Prepopulate with existing terms
+                let options = terms.map(term => `<option value="${term.slug}" selected>${term.label}</option>`).join('');
+                selectBox.html(options);
+    
+                // Initialize Chosen.js with the preloaded options
+                selectBox.chosen({
+                    width: '100%',
+                    placeholder_text_multiple: productCreationAssistant.selectTerms,
+                    no_results_text: productCreationAssistant.noTermsFound,
+                    search_contains: true
+                });
+    
+                // Bind focus event to load new options via AJAX
                 selectBox.one('focus', function () {
-                    selectBox.html('<option disabled selected>' + productCreationAssistant.searching + '</option>');
-                    // Fetch terms via AJAX
                     $.ajax({
                         url: productCreationAssistant.adminUrl,
                         method: 'GET',
@@ -157,24 +167,19 @@ jQuery(document).ready(function ($) {
                             attribute_name: attributeName,
                         },
                         success: function (response) {
-                            let options = '';
                             if (response.success && response.data.terms.length > 0) {
-                                options = response.data.terms.map(term => {
-                                    const selected = values.includes(term.slug) ? 'selected' : '';
-                                    return `<option value="${term.slug}" ${selected}>${term.name}</option>`;
+                                let newOptions = response.data.terms.map(term => {
+                                    if (!selectBox.find(`option[value="${term.slug}"]`).length) {
+                                        return `<option value="${term.slug}">${term.name}</option>`;
+                                    }
                                 }).join('');
-                            } else {
-                                options = `<option value="">${productCreationAssistant.noTermsFound}</option>`;
+    
+                                selectBox.append(newOptions);
+                                selectBox.trigger("chosen:updated");
                             }
-                            selectBox.html(options);
-                            selectBox.chosen({
-                                width: '100%',
-                                placeholder_text_multiple: productCreationAssistant.selectTerms,
-                                no_results_text: productCreationAssistant.noTermsFound
-                            }).trigger("chosen:updated");
                         },
                         error: function () {
-                            selectBox.html(`<option value="">${productCreationAssistant.noTermsFound}</option>`);
+                            console.error('Failed to load new terms');
                         }
                     });
                 });
