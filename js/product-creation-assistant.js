@@ -9,10 +9,10 @@ jQuery(document).ready(function ($) {
                 action: 'pca_add_existing_attribute_row',
                 attribute_name: attribute_name,
                 attribute_label: attribute_label,
-                security: pca_ajax.security // assuming you have a nonce for security
+                security: pca_ajax.security // Use the localized nonce
             };
 
-            $.post(ajaxurl, data, function (response) {
+            $.post(pca_ajax.ajax_url, data, function (response) {
                 $('#pca-attributes-wrapper').append(response);
                 $('.wc-enhanced-select').select2(); // Reinitialize select2
             });

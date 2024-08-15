@@ -147,6 +147,12 @@ function pca_enqueue_admin_scripts() {
     wp_enqueue_style('pca-admin-css', plugin_dir_url(__FILE__) . 'css/product-creation-assistant.css');
     wp_enqueue_script('pca-admin-js', plugin_dir_url(__FILE__) . 'js/product-creation-assistant.js', array('jquery', 'jquery-ui-sortable', 'wp-util'), null, true);
     wp_enqueue_script('wc-enhanced-select');
+
+    // Localize the script with new data
+    wp_localize_script('pca-admin-js', 'pca_ajax', array(
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'security' => wp_create_nonce('pca_nonce')
+    ));
 }
 add_action('admin_enqueue_scripts', 'pca_enqueue_admin_scripts');
 
