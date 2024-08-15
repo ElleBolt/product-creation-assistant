@@ -87,22 +87,10 @@ class PCA_Meta_Boxes {
     }
 
     public function add_existing_attribute_row() {
-        if (!isset($_POST['attribute_name']) || !isset($_POST['attribute_label'])) {
-            wp_die(-1);
-        }
-
-        $attribute_name = sanitize_text_field(wp_unslash($_POST['attribute_name']));
-        $attribute_label = sanitize_text_field(wp_unslash($_POST['attribute_label']));
-
-        // Render the attribute row
-        echo $this->render_existing_attribute_row($attribute_name, $attribute_label);
-
-        wp_die();
-    }
-
-    private function render_existing_attribute_row($attribute_name, $attribute_label) {
-        $tax_name = wc_attribute_taxonomy_name($attribute_name);
-        $terms = get_terms($tax_name, array('hide_empty' => false));
+        check_ajax_referer('pca_nonce', 'security');
+    
+        $attribute_name = sanitize_text_field($_POST['attribute_name']);
+        $attribute_label = sanitize_text_field($_POST['attribute_label']);
     
         ob_start();
         ?>
@@ -112,28 +100,31 @@ class PCA_Meta_Boxes {
                 <a href="#" class="remove_row delete"><?php _e('Remove', 'product-creation-assistant'); ?></a>
             </h3>
             <div class="woocommerce_attribute_data wc-metabox-content hidden">
-                <table cellpadding="0" cellspacing="0" class="attribute_table">
+                <table cellpadding="0" cellspacing="0">
                     <tbody>
                         <tr>
-                            <td>
+                            <td class="attribute_name">
                                 <input type="hidden" name="pca_attributes_names[]" value="<?php echo esc_attr($attribute_name); ?>" />
-                                <input type="hidden" name="pca_attributes_labels[]" value="<?php echo esc_attr($attribute_label); ?>" />
-                                <select multiple="multiple" name="pca_attributes_values[<?php echo esc_attr($attribute_name); ?>][]" class="wc-enhanced-select" data-placeholder="<?php esc_attr_e('Select terms', 'product-creation-assistant'); ?>">
-                                    <?php foreach ($terms as $term) : ?>
-                                        <option value="<?php echo esc_attr($term->slug); ?>"><?php echo esc_html($term->name); ?></option>
-                                    <?php endforeach; ?>
+                                <strong><?php echo esc_html($attribute_label); ?></strong>
+                            </td>
+                            <td class="attribute_values">
+                                <select multiple="multiple" name="pca_attributes_values[<?php echo esc_attr($attribute_name); ?>][]" class="wc-enhanced-select">
+                                    <?php
+                                    $terms = get_terms(array('taxonomy' => $attribute_name, 'hide_empty' => false));
+                                    foreach ($terms as $term) {
+                                        echo '<option value="' . esc_attr($term->slug) . '">' . esc_html($term->name) . '</option>';
+                                    }
+                                    ?>
                                 </select>
-                                <button type="button" class="button add_new_attribute_term"><?php esc_html_e('Add new', 'product-creation-assistant'); ?></button>
+                                <button class="button add_new_attribute_term" data-taxonomy="<?php echo esc_attr($attribute_name); ?>"><?php _e('Add new', 'product-creation-assistant'); ?></button>
                             </td>
                         </tr>
                         <tr>
-                            <td class="attribute_visibility">
+                            <td colspan="2">
                                 <label>
-                                    <input type="checkbox" name="pca_attributes_visibility[<?php echo esc_attr($attribute_name); ?>]" value="1" checked="checked" />
+                                    <input type="checkbox" name="pca_attributes_visibility[<?php echo esc_attr($attribute_name); ?>]" value="1" />
                                     <?php _e('Visible on the product page', 'product-creation-assistant'); ?>
                                 </label>
-                            </td>
-                            <td class="attribute_variation">
                                 <label>
                                     <input type="checkbox" name="pca_attributes_variation[<?php echo esc_attr($attribute_name); ?>]" value="1" />
                                     <?php _e('Used for variations', 'product-creation-assistant'); ?>
@@ -145,7 +136,8 @@ class PCA_Meta_Boxes {
             </div>
         </div>
         <?php
-        return ob_get_clean();
+        echo ob_get_clean();
+        wp_die();
     }
 }
 

@@ -54,14 +54,23 @@ jQuery(document).ready(function ($) {
         $('.add_new_attribute_term').off('click').on('click', function (e) {
             e.preventDefault();
             var row = $(this).closest('.woocommerce_attribute');
-            var attributeName = row.find('input[name="pca_attributes_names[]"]').val();
+            var taxonomy = $(this).data('taxonomy');
             var newTerm = prompt('Enter new term:');
             if (newTerm) {
-                // Add the new term to the select dropdown
+                // Simulate AJAX term creation for the demo
                 var option = new Option(newTerm, newTerm, true, true);
-                row.find('.wc-enhanced-select').append(option).trigger('change');
+                row.find('select[name="pca_attributes_values[' + taxonomy + '][]"]').append(option).trigger('change');
             }
         });
+
+        // Handle visibility and variation checkboxes
+        $('.pca_attributes_visibility, .pca_attributes_variation').off('change').on('change', function () {
+            var checkbox = $(this);
+            checkbox.val(checkbox.is(':checked') ? 1 : 0);
+        });
+
+        // Reinitialize sortable after adding a new row
+        $('#pca-attributes-wrapper').sortable('refresh');
     }
 
     // Initialize any existing rows (in case there are some when the page loads)
