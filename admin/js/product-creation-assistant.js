@@ -1,5 +1,5 @@
 jQuery(document).ready(function ($) {
-    // Add existing attribute row
+    // Handle "Add Existing" dropdown change
     $('#pca-add-existing-attribute').on('change', function () {
         var attribute_name = $(this).val();
         var attribute_label = $(this).find('option:selected').text();
@@ -23,12 +23,6 @@ jQuery(document).ready(function ($) {
     $(document).on('click', '.remove_row', function (e) {
         e.preventDefault();
         $(this).closest('.woocommerce_attribute').remove();
-    });
-
-    // Handle create new term
-    $(document).on('click', '.pca-create-new-term', function (e) {
-        e.preventDefault();
-        alert('Handle term creation here.');
     });
 
     // Make attributes sortable
