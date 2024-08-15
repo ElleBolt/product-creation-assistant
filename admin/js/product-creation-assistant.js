@@ -73,9 +73,10 @@ jQuery(document).ready(function ($) {
 
     // Function to handle interactions in a newly added attribute row
     function handleNewAttributeRow() {
-        // Reinitialize Select2 for the dropdowns in the new row
+        // Initialize select2 for the new row
         $('.wc-enhanced-select').select2();
     }
+    
 
     // Initialize any existing rows (in case there are some when the page loads)
     handleNewAttributeRow();

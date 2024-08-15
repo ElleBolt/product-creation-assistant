@@ -15,12 +15,12 @@ if (!defined('ABSPATH')) {
 require_once plugin_dir_path(__FILE__) . 'admin/class-pca-post-type.php';
 require_once plugin_dir_path(__FILE__) . 'admin/class-pca-meta-boxes.php';
 
-// Enqueue Scripts and Styles for Admin Interface
+// Instantiate the classes
 function pca_enqueue_admin_scripts() {
     wp_enqueue_style('pca-admin-css', plugin_dir_url(__FILE__) . 'admin/css/product-creation-assistant.css');
-    wp_enqueue_script('pca-admin-js', plugin_dir_url(__FILE__) . 'admin/js/product-creation-assistant.js', array('jquery', 'jquery-ui-sortable', 'wp-util'), null, true);
-    wp_enqueue_script('wc-enhanced-select');
-
+    wp_enqueue_script('pca-admin-js', plugin_dir_url(__FILE__) . 'admin/js/product-creation-assistant.js', array('jquery', 'jquery-ui-sortable', 'wp-util', 'select2'), null, true);
+    wp_enqueue_script('wc-enhanced-select'); // WooCommerce select2 for enhanced dropdowns
+    
     // Localize the script with new data
     wp_localize_script('pca-admin-js', 'pca_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),

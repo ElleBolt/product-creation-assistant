@@ -76,6 +76,7 @@ class PCA_Meta_Boxes {
                                 <input type="hidden" name="pca_attributes_names[]" value="<?php echo esc_attr($attribute_name); ?>" />
                             </td>
                             <td class="attribute_values">
+                                <label><?php echo esc_html($attribute_name); ?></label>
                                 <select multiple="multiple" name="pca_attributes_values[<?php echo esc_attr($taxonomy); ?>][]" class="wc-enhanced-select">
                                     <?php foreach ($terms as $term): ?>
                                         <option value="<?php echo esc_attr($term->term_id); ?>" <?php selected(in_array($term->term_id, $selected_terms), true); ?>>
@@ -160,17 +161,17 @@ class PCA_Meta_Boxes {
 
     public function add_new_term() {
         check_ajax_referer('pca_nonce', 'security');
-
+    
         $attribute_name = sanitize_text_field($_POST['attribute_name']);
         $term_name = sanitize_text_field($_POST['term_name']);
-
+    
         if (!taxonomy_exists($attribute_name)) {
             wp_send_json_error(array('message' => 'Invalid attribute.'));
             return; // Exit early to prevent further execution
         }
-
+    
         $term = wp_insert_term($term_name, $attribute_name);
-
+    
         if (is_wp_error($term)) {
             wp_send_json_error(array('message' => $term->get_error_message()));
         } else {
