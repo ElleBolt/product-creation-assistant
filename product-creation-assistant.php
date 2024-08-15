@@ -166,7 +166,7 @@ add_action('wp_ajax_get_attribute_terms', 'pca_get_attribute_terms');
 function pca_delete_rule() {
     if (isset($_POST['rule_id'])) {
         $rule_id = sanitize_text_field($_POST['rule_id']);
-        delete_option($rule_id);
+        delete_option("pca_rule_$rule_id");
         wp_send_json_success();
     } else {
         wp_send_json_error(array('message' => 'Invalid request.'));
@@ -194,7 +194,7 @@ function pca_save_rule() {
             }
             $attributes[$attribute_name] = $terms_with_labels;
         }
-        
+
         $rule_data = [
             'name' => $rule_name,
             'material_ids' => $material_ids,
