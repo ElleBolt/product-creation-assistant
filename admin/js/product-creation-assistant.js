@@ -13,7 +13,7 @@ jQuery(document).ready(function ($) {
             };
 
             $.post(pca_ajax.ajax_url, data, function (response) {
-                $('#pca-attributes-wrapper').append(response);
+                $('#pca-attributes-wrapper').append(response.data);
                 $('.wc-enhanced-select').select2(); // Reinitialize select2
                 handleNewAttributeRow(); // Initialize any new interactions for the newly added row
             });
@@ -24,6 +24,32 @@ jQuery(document).ready(function ($) {
     $(document).on('click', '.remove_row', function (e) {
         e.preventDefault();
         $(this).closest('.woocommerce_attribute').remove();
+    });
+
+    // Handle add new term button click
+    $(document).on('click', '.add_new_attribute_term', function (e) {
+        e.preventDefault();
+        var button = $(this);
+        var attribute_name = button.data('taxonomy');
+        var new_term = prompt('Enter new term:');
+        
+        if (new_term) {
+            var data = {
+                action: 'pca_add_new_term',
+                attribute_name: attribute_name,
+                term_name: new_term,
+                security: pca_ajax.security
+            };
+            
+            $.post(pca_ajax.ajax_url, data, function (response) {
+                if (response.success) {
+                    var option = new Option(response.data.term_name, response.data.term_slug, true, true);
+                    button.siblings('.wc-enhanced-select').append(option).trigger('change');
+                } else {
+                    alert(response.data.message);
+                }
+            });
+        }
     });
 
     // Make attributes sortable
@@ -49,28 +75,6 @@ jQuery(document).ready(function ($) {
     function handleNewAttributeRow() {
         // Reinitialize Select2 for the dropdowns in the new row
         $('.wc-enhanced-select').select2();
-
-        // Handle the add new term button
-        $('.add_new_attribute_term').off('click').on('click', function (e) {
-            e.preventDefault();
-            var row = $(this).closest('.woocommerce_attribute');
-            var taxonomy = $(this).data('taxonomy');
-            var newTerm = prompt('Enter new term:');
-            if (newTerm) {
-                // Simulate AJAX term creation for the demo
-                var option = new Option(newTerm, newTerm, true, true);
-                row.find('select[name="pca_attributes_values[' + taxonomy + '][]"]').append(option).trigger('change');
-            }
-        });
-
-        // Handle visibility and variation checkboxes
-        $('.pca_attributes_visibility, .pca_attributes_variation').off('change').on('change', function () {
-            var checkbox = $(this);
-            checkbox.val(checkbox.is(':checked') ? 1 : 0);
-        });
-
-        // Reinitialize sortable after adding a new row
-        $('#pca-attributes-wrapper').sortable('refresh');
     }
 
     // Initialize any existing rows (in case there are some when the page loads)
