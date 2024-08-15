@@ -59,7 +59,7 @@ jQuery(document).ready(function ($) {
             if (newTerm) {
                 // Simulate AJAX term creation for the demo
                 var option = new Option(newTerm, newTerm, true, true);
-                row.find('select[name="pca_attributes_values[' + taxonomy + '][]"]').append(option).trigger('change');
+                row.find('select[name="pca_attributes_values[' + taxonomy + '][]\"]').append(option).trigger('change');
             }
         });
 
