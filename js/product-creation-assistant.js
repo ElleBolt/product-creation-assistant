@@ -5,7 +5,7 @@ jQuery(document).ready(function ($) {
     $(document).on('click', '.delete-rule', function () {
         if (confirm('Are you sure you want to delete this rule?')) {
             const ruleIndex = $(this).data('index');
-            
+
             $.ajax({
                 url: productCreationAssistant.adminUrl,
                 method: 'POST',
@@ -123,7 +123,7 @@ jQuery(document).ready(function ($) {
         editIndex = ruleIndex;
     });
 
-    // Function to populate attributes in the form with deferred loading
+    // Function to populate attributes in the form
     function populateAttributes(attributes) {
         $('.attributes-wrapper').empty(); // Clear any existing attributes
 
@@ -143,11 +143,10 @@ jQuery(document).ready(function ($) {
                 wrapper.append(attrTemplate);
 
                 const selectBox = wrapper.find('.deferred-select').last();
-                
-                // Attach focus event for deferred loading
-                selectBox.on('focus', function () {
-                    if (selectBox.children().length > 0) return; // Prevent re-fetching
 
+                // Bind focus event to load options when the user focuses on the dropdown
+                selectBox.one('focus', function () {
+                    selectBox.html('<option disabled selected>' + productCreationAssistant.searching + '</option>');
                     // Fetch terms via AJAX
                     $.ajax({
                         url: productCreationAssistant.adminUrl,
@@ -207,11 +206,10 @@ jQuery(document).ready(function ($) {
             wrapper.append(attrTemplate);
 
             const selectBox = wrapper.find('.deferred-select').last();
-            
-            // Attach focus event for deferred loading
-            selectBox.on('focus', function () {
-                if (selectBox.children().length > 0) return; // Prevent re-fetching
 
+            // Bind focus event to load options when the user focuses on the dropdown
+            selectBox.one('focus', function () {
+                selectBox.html('<option disabled selected>' + productCreationAssistant.searching + '</option>');
                 // Fetch terms via AJAX
                 $.ajax({
                     url: productCreationAssistant.adminUrl,
