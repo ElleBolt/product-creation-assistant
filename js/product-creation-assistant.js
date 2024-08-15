@@ -50,7 +50,7 @@ jQuery(document).ready(function ($) {
         saveRuleBtn.addEventListener('click', function () {
             const ruleName = document.querySelector('[name="rule_name"]').value;
             const materialIds = document.querySelector('[name="material_ids"]').value;
-    
+        
             // Collect attributes
             let attributes = {};
             $('.attributes-wrapper .attribute-item').each(function () {
@@ -60,15 +60,15 @@ jQuery(document).ready(function ($) {
                     attributes[attributeName] = attributeValues;
                 }
             });
-    
+        
             if (!ruleName) {
                 alert('Please enter a rule name.');
                 return;
             }
-    
+        
             // Determine if we are editing an existing rule
             const ruleId = editIndex !== null ? pcaRules[editIndex].id : null;
-    
+        
             // Send data via AJAX
             $.ajax({
                 url: productCreationAssistant.adminUrl,
