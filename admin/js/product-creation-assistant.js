@@ -15,6 +15,7 @@ jQuery(document).ready(function ($) {
             $.post(pca_ajax.ajax_url, data, function (response) {
                 $('#pca-attributes-wrapper').append(response);
                 $('.wc-enhanced-select').select2(); // Reinitialize select2
+                handleNewAttributeRow(); // Initialize any new interactions for the newly added row
             });
         }
     });
@@ -43,4 +44,26 @@ jQuery(document).ready(function ($) {
             ui.item.removeAttr('style');
         }
     });
+
+    // Function to handle interactions in a newly added attribute row
+    function handleNewAttributeRow() {
+        // Reinitialize Select2 for the dropdowns in the new row
+        $('.wc-enhanced-select').select2();
+
+        // Handle the add new term button
+        $('.add_new_attribute_term').off('click').on('click', function (e) {
+            e.preventDefault();
+            var row = $(this).closest('.woocommerce_attribute');
+            var attributeName = row.find('input[name="pca_attributes_names[]"]').val();
+            var newTerm = prompt('Enter new term:');
+            if (newTerm) {
+                // Add the new term to the select dropdown
+                var option = new Option(newTerm, newTerm, true, true);
+                row.find('.wc-enhanced-select').append(option).trigger('change');
+            }
+        });
+    }
+
+    // Initialize any existing rows (in case there are some when the page loads)
+    handleNewAttributeRow();
 });
