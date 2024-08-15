@@ -49,9 +49,8 @@ jQuery(document).ready(function ($) {
         saveRuleBtn.addEventListener('click', function () {
             const ruleName = document.querySelector('[name="rule_name"]').value;
             const materialIds = document.querySelector('[name="material_ids"]').value;
-
-            // Collect attributes
             let attributes = {};
+    
             $('.attributes-wrapper .attribute-item').each(function () {
                 const attributeName = $(this).find('label').text().replace(':', '');
                 const attributeValues = $(this).find('select').val();
@@ -59,23 +58,27 @@ jQuery(document).ready(function ($) {
                     attributes[attributeName] = attributeValues;
                 }
             });
-
+    
             if (!ruleName) {
                 alert('Please enter a rule name.');
                 return;
             }
-
-            // Send data via AJAX
+    
+            const data = {
+                action: 'save_pca_rule',
+                rule_name: ruleName,
+                material_ids: materialIds,
+                attributes: attributes,
+            };
+    
+            if (editIndex !== null) {
+                data.rule_id = editIndex;  // Send the rule ID for editing
+            }
+    
             $.ajax({
                 url: productCreationAssistant.adminUrl,
                 method: 'POST',
-                data: {
-                    action: 'save_pca_rule',
-                    rule_name: ruleName,
-                    material_ids: materialIds,
-                    attributes: attributes,
-                    index: editIndex, // Include index if editing
-                },
+                data: data,
                 success: function (response) {
                     if (response.success) {
                         location.reload(); // Reload the page to see the updated rules list
@@ -88,8 +91,6 @@ jQuery(document).ready(function ($) {
                 }
             });
         });
-    } else {
-        console.error("Save Rule Button not found");
     }
 
     // Cancel Rule Button Click
